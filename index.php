@@ -3,45 +3,31 @@ include 'koneksi.php';
 
 session_start();
 
-// Cek apakah pengguna sudah login
 if (!isset($_SESSION['username'])) {
-    // Jika belum login, arahkan ke halaman login
     header("Location: login.php");
     exit;
 }
-
-// Jika sudah login, tampilkan halaman index
-
-
-// Menambahkan barang
-
 if (isset($_POST['tambah'])) {
     $nama_barang = $_POST['nama_barang'];
-    $jumlah = isset($_POST['jumlah']) ? $_POST['jumlah'] : 0;  // This will be set to the initial quantity (masuk)
+    $jumlah = isset($_POST['jumlah']) ? $_POST['jumlah'] : 0;  
     $kode = $_POST['kode'];
     $tanggal = $_POST['tanggal'];
     $masuk = isset($_POST['masuk']) ? $_POST['masuk'] : 0;
     $keluar = isset($_POST['keluar']) ? $_POST['keluar'] : 0;
-
-    // Insert the new item into the database
     $sql = "INSERT INTO barang (kode, tanggal, nama_barang, jumlah, keluar, masuk) 
     VALUES ('$kode','$tanggal', '$nama_barang', $jumlah, $keluar, $masuk)";
 
     if ($conn->query($sql)) {
-        // Set session untuk notifikasi
         $_SESSION['success'] = "Barang berhasil ditambahkan!";
     } else {
         $_SESSION['error'] = "Gagal menambahkan barang: " . $conn->error;
     }
 
-    // Redirect after adding the item
     header("Location: index.php");
     exit();
 }
 
 
-
-// Menghapus barang
 if (isset($_GET['hapus'])) {
     $id = $_GET['hapus'];
     $sql = "DELETE FROM barang WHERE id=$id";
@@ -50,19 +36,15 @@ if (isset($_GET['hapus'])) {
     }else {
         $_SESSION['error'] = "Gagal menghapus data: ". $conn->error;
     }
-
-    // Redirect after deleting the item
     header("Location: index.php");
     exit();
 }
-
 if (isset($_POST['update'])) {
-    $id = $_POST['id']; // ID barang
-    $jumlah = $_POST['jumlah']; // Jumlah barang
-    $aksi = isset($_POST['aksi']) ? $_POST['aksi'] : 'keluar'; // Default ke 'keluar'
+    $id = $_POST['id']; 
+    $jumlah = $_POST['jumlah']; 
+    $aksi = isset($_POST['aksi']) ? $_POST['aksi'] : 'keluar';
 
     if ($aksi === 'masuk') {
-        // Update jumlah barang dan tambahkan ke kolom 'jumlah' dan 'masuk'
         $sql = "UPDATE barang SET jumlah = jumlah + $jumlah, masuk = masuk + $jumlah WHERE id = $id";
         if ($conn->query($sql)) {
             $_SESSION['success'] = "Berhasil menambahkan jumlah barang masuk!";
@@ -73,11 +55,8 @@ if (isset($_POST['update'])) {
         // Data dari modal
         $nama_pengambil = $_POST['nama_pengambil'];
         $tanggal_pengambilan = $_POST['tanggal_pengambilan'];
-
-        // Update tabel barang
         $sql = "UPDATE barang SET jumlah = jumlah - $jumlah, keluar = keluar + $jumlah WHERE id = $id";
         if ($conn->query($sql)) {
-            // Simpan data transaksi ke tabel transaksi_keluar
             $sql_transaksi = "INSERT INTO riwayat_keluar (id_barang, nama_pengambil, jumlah, tanggal_pengambilan) 
                               VALUES ($id, '$nama_pengambil', $jumlah, '$tanggal_pengambilan')";
             if ($conn->query($sql_transaksi)) {
@@ -89,42 +68,25 @@ if (isset($_POST['update'])) {
             $_SESSION['error'] = "Gagal mengurangi barang!";
         }
     }
-
-    // Redirect setelah update untuk menampilkan pesan flash
     header("Location: index.php");
     exit();
 }
 
-
-
-
-
-// Form untuk menambah barang
-
-
-// Tentukan jumlah data per halaman
 $limit = 20;
-
-// Ambil halaman saat ini dari query string, jika tidak ada setel halaman ke 1
 $page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
-
-// Hitung offset
 $offset = ($page - 1) * $limit;
 
-// Get search keyword from the query string
 $searchKeyword = isset($_GET['search']) ? $_GET['search'] : '';
 
-// Modify the query to filter results based on search
+
 if ($searchKeyword) {
     $searchKeyword = "%$searchKeyword%";
-    // Ambil data berdasarkan ID yang lebih besar dari ID yang ditampilkan pada halaman sebelumnya
     $sql = "SELECT * FROM barang WHERE nama_barang LIKE ? OR kode LIKE ? ORDER BY id LIMIT ? OFFSET ?";
     $stmt = $conn->prepare($sql);
     $stmt->bind_param("ssii", $searchKeyword, $searchKeyword, $limit, $offset);
     $stmt->execute();
     $result = $stmt->get_result();
 } else {
-    // Default query jika tidak ada pencarian
     $sql = "SELECT * FROM barang ORDER BY id LIMIT ? OFFSET ?";
     $stmt = $conn->prepare($sql);
     $stmt->bind_param("ii", $limit, $offset);
@@ -132,12 +94,8 @@ if ($searchKeyword) {
     $result = $stmt->get_result();
 }
 
-
-// Mengambil data barang
 $sql = "SELECT * FROM barang";
 $result = $conn->query($sql);
-
-// Total masuk dan keluar barang
 $sql_total_masuk = "SELECT SUM(masuk) as total_masuk FROM barang";
 $result_masuk = $conn->query($sql_total_masuk);
 $total_masuk = $result_masuk->fetch_assoc()['total_masuk'];
@@ -145,8 +103,6 @@ $total_masuk = $result_masuk->fetch_assoc()['total_masuk'];
 $sql_total_keluar = "SELECT SUM(keluar) as total_keluar FROM barang";
 $result_keluar = $conn->query($sql_total_keluar);
 $total_keluar = $result_keluar->fetch_assoc()['total_keluar'];
-
-// Mengambil data barang
 $sql = "SELECT * FROM barang";
 $result = $conn->query($sql);
 ?>
@@ -361,7 +317,7 @@ if (isset($_SESSION['error'])) {
                 <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
             </div>
           </div>';
-    unset($_SESSION['error']); // Hapus pesan setelah ditampilkan
+    unset($_SESSION['error']);
 }
 ?>
 
@@ -370,7 +326,6 @@ if (isset($_SESSION['error'])) {
 </button>
 
 
-            <!-- Modal for Adding Barang -->
             <div class="modal fade" id="tambahBarangModal" tabindex="-1" aria-labelledby="tambahBarangLabel" aria-hidden="true">
                 <div class="modal-dialog">
                     <div class="modal-content">
@@ -405,37 +360,29 @@ if (isset($_SESSION['error'])) {
                 </div>
             </div>
 
-            
-
-<!-- Search form -->
-<form method="GET" class="mb-3">
+    <form method="GET" class="mb-3">
     <input type="text" name="search" class="form-control form-control-sm" placeholder="Cari Nama Barang atau Kode" value="<?php echo isset($_GET['search']) ? $_GET['search'] : ''; ?>" style="width: 300px; display: inline;">
     <button type="submit" class="btn btn-primary btn-sm">Cari</button>
 </form>
 <?php
-// Hitung total halaman
 $sql_count = "SELECT COUNT(*) AS total FROM barang";
 $result_count = $conn->query($sql_count);
 $total_data = $result_count->fetch_assoc()['total'];
 $total_pages = ceil($total_data / $limit);
 
-// Konfigurasi pagination
-$range = 2; // Jumlah halaman di kiri/kanan halaman aktif
+$range = 2; 
 $previous_page = $page - 1;
 $next_page = $page + 1;
 
-// Menampilkan navigasi
 echo '<nav aria-label="Page navigation">';
 echo '<ul class="pagination justify-content-center">';
 
-// Tombol Previous
 if ($page > 1) {
     echo "<li class='page-item'><a class='page-link' href='?page=$previous_page'>Previous</a></li>";
 } else {
     echo "<li class='page-item disabled'><span class='page-link'>Previous</span></li>";
 }
 
-// Menampilkan halaman dalam range
 for ($i = 1; $i <= $total_pages; $i++) {
     if ($i == 1 || $i == $total_pages || ($i >= $page - $range && $i <= $page + $range)) {
         $active = ($i == $page) ? 'active' : '';
@@ -445,7 +392,6 @@ for ($i = 1; $i <= $total_pages; $i++) {
     }
 }
 
-// Tombol Next
 if ($page < $total_pages) {
     echo "<li class='page-item'><a class='page-link' href='?page=$next_page'>Next</a></li>";
 } else {
@@ -455,8 +401,6 @@ if ($page < $total_pages) {
 echo '</ul>';
 echo '</nav>';
 ?>
-
-
 
 <table class="table table-bordered">
     <thead class="thead-light">
@@ -474,19 +418,14 @@ echo '</nav>';
 
     <tbody>
     <?php
-    // Tentukan berapa banyak data per halaman
     $limit = 20;
     
-    // Tentukan halaman yang sedang aktif
     $page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
     
-    // Hitung OFFSET berdasarkan halaman yang aktif
     $offset = ($page - 1) * $limit;
     
-    // Get search keyword from the query string
     $searchKeyword = isset($_GET['search']) ? $_GET['search'] : '';
     
-    // Query untuk mendapatkan data dengan pagination
     if ($searchKeyword) {
         $searchKeyword = "%$searchKeyword%";
         $sql = "SELECT * FROM barang WHERE nama_barang LIKE ? OR kode LIKE ? ORDER BY id LIMIT ? OFFSET ?";
@@ -502,12 +441,11 @@ echo '</nav>';
         $result = $stmt->get_result();
     }
     
-    // Menampilkan data
-    $no = $offset + 1;  // Mulai nomor urut sesuai dengan offset
+    $no = $offset + 1; 
 while ($row = $result->fetch_assoc()) :
 ?>
     <tr>
-        <td><?php echo $no++; ?></td> <!-- Nomor urut tetap berlanjut meski data dihapus -->
+        <td><?php echo $no++; ?></td> 
         <td><?php echo $row['tanggal']; ?></td>
         <td><?php echo $row['kode']; ?></td>
         <td><?php echo $row['nama_barang']; ?></td>
@@ -519,14 +457,7 @@ while ($row = $result->fetch_assoc()) :
         </td>
         <td><?php echo $row['jumlah']; ?></td>
         <td>
-            <!-- Tindakan lain seperti tombol untuk menghapus, edit, dll. -->
-       
-
-     
-    
-    
-
-            <form method="POST" style="display:inline;">
+    <form method="POST" style="display:inline;">
     <input type="hidden" name="id" value="<?php echo $row['id']; ?>">
     <input type="number" name="jumlah" placeholder="Jumlah" required class="form-control form-control-sm" style="width: 80px; display: inline;">
     <select id="aksi-select-<?php echo $row['id']; ?>" name="aksi" required class="form-control form-control-sm" style="width: 100px; display: inline;" onchange="handleAksiChange(<?php echo $row['id']; ?>);">
@@ -561,10 +492,8 @@ while ($row = $result->fetch_assoc()) :
                     </thead>
                     <tbody>
                     <?php
-                    // Ambil data terkait barang keluar dari tabel barang_keluar
                     $id_barang = $row['id'];
 
-                    // Query untuk mengambil data terbaru terlebih dahulu (urutkan berdasarkan tanggal_pengambilan DESC)
                     $query_keluar = "SELECT jumlah, nama_pengambil, tanggal_pengambilan FROM riwayat_keluar WHERE id_barang = $id_barang ORDER BY tanggal_pengambilan DESC";
                     $result_keluar = $conn->query($query_keluar);
                     if ($result_keluar->num_rows > 0) {
@@ -573,10 +502,8 @@ while ($row = $result->fetch_assoc()) :
                             $data_array[] = $data;
                         }
                     
-                        // Variabel penghitung untuk nomor urut
                         $no = 1;
                     
-                        // Tampilkan 5 data pertama
                         for ($i = 0; $i < count($data_array); $i++) {
                             if ($i < 5) {
                                 echo "<tr>";
@@ -588,7 +515,7 @@ while ($row = $result->fetch_assoc()) :
                             } else {
                                 // Tambahkan class 'hidden-row' untuk data lebih dari 5
                                 echo "<tr class='hidden-row' style='display: none;'>";
-                                echo "<td>" . $no++ . "</td>"; // Nomor urut
+                                echo "<td>" . $no++ . "</td>"; 
                                 echo "<td>" . $data_array[$i]['nama_pengambil'] . "</td>";
                                 echo "<td>" . $data_array[$i]['jumlah'] . "</td>";
                                 echo "<td>" . $data_array[$i]['tanggal_pengambilan'] . "</td>";
@@ -597,8 +524,6 @@ while ($row = $result->fetch_assoc()) :
                         }
                     
                     
-
-                        // Tampilkan tombol selengkapnya jika ada lebih dari 5 data
                         if (count($data_array) > 5) {
                             echo "<tr>";
                             echo "<td colspan='3' class='text-center'><button id='show-more' class='btn btn-info' onclick='showMore()'>Selengkapnya</button></td>";
@@ -619,7 +544,6 @@ while ($row = $result->fetch_assoc()) :
 </div>
 
 
-<!-- Modal Input Keluar -->
 <div class="modal fade" id="modalKeluar-<?php echo $row['id']; ?>" tabindex="-1" aria-labelledby="modalKeluarLabel-<?php echo $row['id']; ?>" aria-hidden="true">
     <div class="modal-dialog">
         <form method="POST">
@@ -659,29 +583,24 @@ while ($row = $result->fetch_assoc()) :
     </tbody>
 </table>
 <?php
-// Hitung total halaman
 $sql_count = "SELECT COUNT(*) AS total FROM barang";
 $result_count = $conn->query($sql_count);
 $total_data = $result_count->fetch_assoc()['total'];
 $total_pages = ceil($total_data / $limit);
 
-// Konfigurasi pagination
-$range = 2; // Jumlah halaman di kiri/kanan halaman aktif
+$range = 2; 
 $previous_page = $page - 1;
 $next_page = $page + 1;
 
-// Menampilkan navigasi
 echo '<nav aria-label="Page navigation">';
 echo '<ul class="pagination justify-content-center">';
 
-// Tombol Previous
 if ($page > 1) {
     echo "<li class='page-item'><a class='page-link' href='?page=$previous_page'>Previous</a></li>";
 } else {
     echo "<li class='page-item disabled'><span class='page-link'>Previous</span></li>";
 }
 
-// Menampilkan halaman dalam range
 for ($i = 1; $i <= $total_pages; $i++) {
     if ($i == 1 || $i == $total_pages || ($i >= $page - $range && $i <= $page + $range)) {
         $active = ($i == $page) ? 'active' : '';
@@ -691,7 +610,6 @@ for ($i = 1; $i <= $total_pages; $i++) {
     }
 }
 
-// Tombol Next
 if ($page < $total_pages) {
     echo "<li class='page-item'><a class='page-link' href='?page=$next_page'>Next</a></li>";
 } else {
@@ -701,11 +619,6 @@ if ($page < $total_pages) {
 echo '</ul>';
 echo '</nav>';
 ?>
-
-
-
-
-
 <br>
     <br>
     <br>
@@ -723,8 +636,6 @@ echo '</nav>';
     <button onclick="DataKeluarExcel()" class="btn btn-danger">Data Keluar To Excel</button>
 </div>
 </div>
-
-
     <br>
     <br>
     <br>
@@ -752,24 +663,17 @@ echo '</nav>';
     document.getElmentById('tanggal').value = formattedDate;
    }
 
-
-
    function handleAksiChange(id) {
         const aksiSelect = document.getElementById('aksi-select-' + id);
         if (aksiSelect.value === 'keluar') {
-            // Tampilkan modal dengan ID unik
             const modal = new bootstrap.Modal(document.getElementById('modalKeluar-' + id));
             modal.show();
-
-            // Reset dropdown kembali ke "masuk"
             aksiSelect.value = 'masuk';
         }
     }
 
-
     function confirmDelete(event, id) {
-    event.preventDefault(); // Mencegah link langsung dijalankan
-
+    event.preventDefault(); 
     Swal.fire({
         title: "Konfirmasi Hapus",
         text: "Apakah Anda yakin ingin menghapus data ini?",
@@ -781,34 +685,24 @@ echo '</nav>';
         cancelButtonText: "Batal"
     }).then((result) => {
         if (result.isConfirmed) {
-            window.location.href = "?hapus=" + id; // Redirect ke URL hapus jika dikonfirmasi
+            window.location.href = "?hapus=" + id; 
         }
     });
 
     return false;
 }
 
-// Inisialisasi tooltip
 var tooltipTriggerList = Array.from(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
 var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
   return new bootstrap.Tooltip(tooltipTriggerEl)
 })
 
-
-    // Fungsi untuk mengenerate PDF
-   // Fungsi untuk mengenerate PDF
    function generateExcel() {
-    // Ambil data dari server menggunakan fetch
     fetch("get_all_barang.php")
         .then(response => response.json()) // Konversi respons ke JSON
         .then(data => {
-            // Inisialisasi array untuk data Excel
             const rows = [];
-
-            // Header kolom untuk file Excel
             rows.push(["No", "Tanggal", "Kode Barang", "Nama Barang", "Total Masuk", "Total Keluar", "Stock Barang"]);
-
-            // Isi data dari API
             let no = 1;
             data.forEach(row => {
                 rows.push([
@@ -822,13 +716,9 @@ var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
                 ]);
                 no++;
             });
-
-            // Gunakan SheetJS untuk membuat file Excel
             const worksheet = XLSX.utils.aoa_to_sheet(rows);
             const workbook = XLSX.utils.book_new();
             XLSX.utils.book_append_sheet(workbook, worksheet, "Data Barang");
-
-            // Simpan file Excel
             XLSX.writeFile(workbook, "Laporan_Barang.xlsx");
         })
         .catch(error => {
@@ -836,16 +726,12 @@ var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
         });
 }
 
-
-
-
-
 function showNotification(message, type) {
     var notification = document.getElementById('notification');
     notification.classList.remove('alert-success', 'alert-danger');
-    notification.classList.add(type);  // Tipe bisa 'alert-success' atau 'alert-danger'
+    notification.classList.add(type);  
     notification.innerHTML = message;
-    notification.style.display = 'block'; // Menampilkan notifikasi
+    notification.style.display = 'block';
 
     // Menghilangkan notifikasi setelah 5 detik
     setTimeout(function() {
@@ -855,9 +741,7 @@ function showNotification(message, type) {
 
   // Cek ketika form di-submit
   document.querySelector('form').addEventListener('submitt', function(event) {
-    event.preventDefault();  // Mencegah form dikirimkan secara langsung
-
-    // Simulasi AJAX atau proses data (bisa menggunakan PHP untuk memprosesnya)
+    event.preventDefault(); 
     var form = this;
     var action = form.querySelector('[name="aksi"]').value;
     var jumlah = form.querySelector('[name="jumlah"]').value;
@@ -870,37 +754,24 @@ function showNotification(message, type) {
         form.reset(); // Reset form setelah submit
       }, 1000); // Simulasi proses 1 detik
     } else {
-      // Simulasikan aksi "keluar"
       setTimeout(function() {
         showNotification('Berhasil Mengurangkan Stock Barang!', 'alert-success');
-        form.reset(); // Reset form setelah submit
-      }, 1000); // Simulasi proses 1 detik
+        form.reset(); 
+      }, 1000); 
     }
   });
 
-
   function showMore() {
-    // Tampilkan semua baris dengan class 'hidden-row'
     const hiddenRows = document.querySelectorAll('.hidden-row');
     hiddenRows.forEach(row => row.style.display = '');
-    // Sembunyikan tombol "Selengkapnya"
     document.getElementById('show-more').style.display = 'none';
 }
-
-
-
 function DataKeluarExcel() {
-    // Ambil data dari server menggunakan fetch
     fetch("get_all_data_keluar.php")
-        .then(response => response.json()) // Konversi respons ke JSON
+        .then(response => response.json()) 
         .then(data => {
-            // Inisialisasi array untuk data Excel
             const rows = [];
-            
-            // Header kolom untuk file Excel
             rows.push(["No", "Nama Pengambil", "Nama Barang", "Jumlah Keluar", "Tanggal Pengambilan"]);
-
-            // Isi data dari API
             let no = 1;
             data.forEach(row => {
                 rows.push([
@@ -912,22 +783,15 @@ function DataKeluarExcel() {
                 ]);
                 no++;
             });
-
-            // Gunakan SheetJS untuk membuat file Excel
             const worksheet = XLSX.utils.aoa_to_sheet(rows);
             const workbook = XLSX.utils.book_new();
             XLSX.utils.book_append_sheet(workbook, worksheet, "Data Keluar");
-
-            // Simpan file Excel
             XLSX.writeFile(workbook, "Laporan_Barang_Keluar.xlsx");
         })
         .catch(error => {
             console.error("Error fetching data pengambilan:", error);
         });
 }
-
-
-
 </script>
     <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.3/dist/umd/popper.min.js"></script>
@@ -936,8 +800,5 @@ function DataKeluarExcel() {
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-
-
-
 </body>
 </html>
